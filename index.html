@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#111111">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="工期记录">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="style.css">
+<title>工期记录</title>
+</head>
+<body>
+<div class="app">
+<header class="topbar">
+<button class="icon" onclick="toggleSidebar()">☰</button>
+<strong>工期记录</strong>
+<button class="icon" onclick="showPage('calendar')">▣</button>
+</header>
+
+<div id="overlay" class="overlay" onclick="closeSidebar()"></div>
+<aside id="sidebar" class="sidebar">
+<div class="sideHead"><strong>工期记录</strong><button class="icon" onclick="closeSidebar()">×</button></div>
+<button class="side active" onclick="showPage('home')">⌂　首页</button>
+<button class="side" onclick="showPage('calendar')">▣　日历</button>
+<button class="side" onclick="showPage('statistics')">▥　统计</button>
+<button class="side" onclick="showPage('settings')">⚙　设置</button>
+</aside>
+
+<main id="homePage" class="page">
+<section class="hero"><h1>工期记录</h1><p>管理兼职工作和收入</p></section>
+
+<section class="summary">
+<div><small>本月工期</small><strong id="monthDays">0 天</strong></div>
+<div><small>本月收入</small><strong id="monthIncome">₩0</strong></div>
+<div><small>已结算</small><strong id="settledIncome">₩0</strong></div>
+<div><small>待结算</small><strong id="pendingIncome">₩0</strong></div>
+</section>
+
+<div class="sectionTitle"><h2>正在进行</h2></div>
+<div id="activeJobs"></div>
+
+<div class="sectionTitle"><h2>工期记录</h2><button class="plus" onclick="openAddJob()">＋</button></div>
+<div id="jobList"></div>
+</main>
+
+<main id="calendarPage" class="page hidden">
+<section class="pageTitle"><h1>日历</h1><p>点击日期查看当天工作</p></section>
+<div class="calendarControl"><button onclick="changeMonth(-1)">‹</button><strong id="calendarTitle"></strong><button onclick="changeMonth(1)">›</button></div>
+<div class="week"><span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span></div>
+<div id="calendarGrid" class="calendarGrid"></div>
+<div id="selectedDateJobs"></div>
+</main>
+
+<main id="statisticsPage" class="page hidden">
+<section class="pageTitle"><h1>统计</h1><p>查看工作和收入数据</p></section>
+<div class="statsGrid">
+<div class="stat"><small>累计工期</small><strong id="totalDays">0 天</strong></div>
+<div class="stat"><small>累计收入</small><strong id="totalIncome">₩0</strong></div>
+<div class="stat"><small>已结算</small><strong id="totalSettled">₩0</strong></div>
+<div class="stat"><small>待结算</small><strong id="totalPending">₩0</strong></div>
+<div class="stat"><small>平均日薪</small><strong id="averageDaily">₩0</strong></div>
+</div>
+<div class="sectionTitle"><h2>月度统计</h2></div>
+<div id="monthlyStats"></div>
+</main>
+
+<main id="settingsPage" class="page hidden">
+<section class="pageTitle"><h1>设置</h1><p>数据备份和管理</p></section>
+<div class="settings">
+<button onclick="exportData()">导出数据备份</button>
+<button onclick="document.getElementById('importFile').click()">导入数据备份</button>
+<input id="importFile" type="file" accept=".json" hidden onchange="importData(event)">
+<button class="danger" onclick="clearAllJobs()">清空全部数据</button>
+</div>
+</main>
+
+<div id="addModal" class="modal hidden"><div class="modalBox">
+<div class="modalHead"><h2>新增工期</h2><button onclick="closeAddJob()">×</button></div>
+<label>工作名称<input id="jobName" placeholder="例如 外墙喷漆"></label>
+<label>开始日期<input id="jobStart" type="date"></label>
+<label>结束日期<input id="jobEnd" type="date"></label>
+<label>每日工资<input id="jobDaily" type="number" inputmode="numeric" placeholder="例如 150000"></label>
+<label>总收入<input id="jobIncome" type="number" inputmode="numeric" placeholder="自动计算"></label>
+<label>工作颜色<input id="jobColor" type="color" value="#22a45a"></label>
+<label>备注<textarea id="jobNote" placeholder="工作地点或其他信息"></textarea></label>
+<div class="modalButtons"><button class="cancel" onclick="closeAddJob()">取消</button><button class="save" onclick="saveJob()">保存</button></div>
+</div></div>
+
+<div id="editModal" class="modal hidden"><div class="modalBox">
+<div class="modalHead"><h2>编辑工期</h2><button onclick="closeEditJob()">×</button></div>
+<input id="editId" type="hidden">
+<label>工作名称<input id="editName"></label>
+<label>开始日期<input id="editStart" type="date"></label>
+<label>结束日期<input id="editEnd" type="date"></label>
+<label>每日工资<input id="editDaily" type="number" inputmode="numeric"></label>
+<label>总收入<input id="editIncome" type="number" inputmode="numeric"></label>
+<label>工作颜色<input id="editColor" type="color"></label>
+<label>备注<textarea id="editNote"></textarea></label>
+<div class="modalButtons"><button class="cancel" onclick="closeEditJob()">取消</button><button class="save" onclick="updateJob()">保存</button></div>
+</div></div>
+
+<nav class="bottomNav">
+<button onclick="showPage('home')"><span>⌂</span><small>首页</small></button>
+<button onclick="showPage('calendar')"><span>▣</span><small>日历</small></button>
+<button class="bottomPlus" onclick="openAddJob()">＋</button>
+<button onclick="showPage('statistics')"><span>▥</span><small>统计</small></button>
+<button onclick="showPage('settings')"><span>⚙</span><small>设置</small></button>
+</nav>
+</div>
+<script src="script.js"></script>
+</body>
+</html>
