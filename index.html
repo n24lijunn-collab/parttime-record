@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#fff">
+<title>工作日历</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:#fff;color:#171c24;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Apple SD Gothic Neo","Noto Sans KR",sans-serif}
+button,input,textarea{font:inherit}button{border:0;background:none}
+.app{height:100dvh;overflow:hidden;max-width:820px;margin:auto;padding-bottom:68px}
+.top{height:64px;display:flex;align-items:center;justify-content:space-between;padding:8px 22px 0;border-bottom:1px solid #eef1f5}
+.top .title{font-size:25px;font-weight:800}.icon{font-size:31px;line-height:1}
+.monthbar{height:68px;display:flex;align-items:center;justify-content:center;gap:42px}
+.monthbar button{font-size:34px;color:#6f7885}.month{font-size:31px;font-weight:850}
+.hint{text-align:center;color:#a2a9b4;font-size:14px;height:25px}
+.week{display:grid;grid-template-columns:repeat(7,1fr);margin:0 12px;border:1px solid #e6eaf0;border-bottom:0;border-radius:20px 20px 0 0}
+.week div{text-align:center;padding:8px 0;font-size:15px;font-weight:750}.sun{color:#ff3038}.sat{color:#1268ee}
+.calendar{display:grid;grid-template-columns:repeat(7,1fr);margin:0 12px;border:1px solid #e6eaf0;border-radius:0 0 20px 20px;overflow:hidden}
+.day{height:77px;border-right:1px solid #e6eaf0;border-top:1px solid #e6eaf0;text-align:center;padding-top:7px;cursor:pointer}
+.day:nth-child(7n){border-right:0}.num{font-size:22px;font-weight:550}.muted .num{color:#cdd2d9}
+.selected{background:#f3f7ff}.selected .num{display:flex;width:42px;height:42px;border-radius:50%;background:#1768f2;color:#fff;align-items:center;justify-content:center;margin:-3px auto 0}
+.mark{width:42px;height:5px;border-radius:8px;margin:9px auto 4px}.green{background:#1bb65a}.orange{background:#ff9f0a}.pink{background:#ff8d98}
+.hours{font-size:12px}.pay{font-size:10px;margin-top:2px}.rest{font-size:11px;color:#1768f2;margin-top:6px}
+.pager{text-align:center;color:#d5d9df;font-size:16px;height:25px;padding-top:4px}.pager b{color:#1768f2}
+.detail{margin:0 12px;height:192px;padding:15px 17px;border-radius:20px;box-shadow:0 3px 18px #17203312;border:1px solid #eef1f5}
+.detailHead{height:38px;display:flex;align-items:start;justify-content:space-between;border-bottom:1px solid #edf0f4}.dateTitle{font-size:19px;font-weight:800}.badge{font-size:11px;background:#eaf2ff;color:#1768f2;border-radius:6px;padding:4px 7px;margin-left:5px}.edit{border:1px solid #e0e5eb;border-radius:8px;padding:5px 9px;font-size:12px}
+.info{display:grid;grid-template-columns:1fr auto;gap:7px;padding:10px 0;font-size:13px}.label{color:#68717e}.value{text-align:right;font-weight:600;max-width:210px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.add{width:100%;height:36px;border-radius:8px;background:#1768f2;color:#fff;font-size:14px}
+.summary{display:none}
+.bottom{position:fixed;bottom:0;left:0;right:0;height:68px;background:rgba(255,255,255,.98);border-top:1px solid #e5e8ed;display:grid;grid-template-columns:repeat(5,1fr);z-index:20}
+.nav{text-align:center;color:#68717e;font-size:11px;padding-top:6px}.navIcon{font-size:23px;height:27px}.active{color:#1768f2;font-weight:750}
+.modal{position:fixed;inset:0;background:#0005;display:none;align-items:end;z-index:30}.sheet{background:#fff;border-radius:24px 24px 0 0;width:100%;padding:20px 20px 28px}.sheet h2{margin:0 0 15px;font-size:21px}.field{margin:9px 0}.field label{display:block;font-size:12px;color:#68717e;margin-bottom:4px}.field input,.field textarea{width:100%;border:1px solid #dfe4eb;border-radius:9px;padding:9px}.actions{display:flex;gap:8px;margin-top:14px}.actions button{flex:1;height:42px;border-radius:9px}.cancel{background:#eef1f5}.save{background:#1768f2;color:#fff}
+@media(min-width:600px){.app{max-width:820px}.day{height:105px}.detail{height:230px}.top{height:80px}.monthbar{height:85px}}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="top">
+<button class="icon" onclick="showMenu()">☰</button>
+<div class="title">工作日历</div>
+<div><button class="icon" onclick="searchRecords()">⌕</button><button class="icon" onclick="openModal()">＋</button></div>
+</header>
+
+<div class="monthbar">
+<button onclick="changeMonth(-1)">‹</button>
+<div class="month" id="monthTitle"></div>
+<button onclick="changeMonth(1)">›</button>
+</div>
+<div class="hint">左右滑动切换月份</div>
+
+<div class="week"><div class="sun">일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div class="sat">토</div></div>
+<div class="calendar" id="calendar"></div>
+<div class="pager"><b>●</b>　○　○　○</div>
+<div class="detail" id="detail"></div>
+
+<div id="workPage" class="page"></div>
+<div id="incomePage" class="page"></div>
+<div id="statsPage" class="page"></div>
+<div id="newsPage" class="page">
+<h2>资讯</h2>
+<div class="card"><b>工作日历</b><div style="color:#68717e;margin-top:8px;font-size:13px">记录工作日期 工时和收入 方便查看每月工作情况</div></div>
+<div class="card"><b>使用提示</b><div style="color:#68717e;margin-top:8px;font-size:13px">点击日期查看详情 点击右上角＋添加记录 左右滑动切换月份</div></div>
+</div>
+</div>
+
+<nav class="bottom">
+<button class="nav active" onclick="showPage('calendar',this)"><div class="navIcon">▣</div>캘린더</button>
+<button class="nav" onclick="showPage('work',this)"><div class="navIcon">▱</div>작업</button>
+<button class="nav" onclick="showPage('income',this)"><div class="navIcon">₩</div>수입</button>
+<button class="nav" onclick="showPage('stats',this)"><div class="navIcon">▥</div>통계</button>
+<button class="nav" onclick="showPage('news',this)"><div class="navIcon">▤</div>资讯</button>
+</nav>
+
+<div class="modal" id="modal" onclick="if(event.target===this)closeModal()">
+<div class="sheet">
+<h2>작업 기록</h2>
+<div class="field"><label>날짜</label><input id="fDate" type="date"></div>
+<div class="field"><label>근무지</label><input id="fPlace" placeholder="근무지"></div>
+<div class="field"><label>업종 / 직무</label><input id="fJob" placeholder="업종 / 직무"></div>
+<div class="field"><label>시간</label><input id="fHours" type="number" step=".5" placeholder="8"></div>
+<div class="field"><label>수입</label><input id="fIncome" type="number" placeholder="150000"></div>
+<div class="field"><label>메모</label><textarea id="fMemo" rows="2"></textarea></div>
+<div class="actions"><button class="cancel" onclick="closeModal()">취소</button><button class="save" onclick="saveRecord()">저장</button></div>
+</div></div>
+
+<script>
+const KEY='workCalendarDataV2';
+let data=JSON.parse(localStorage.getItem(KEY)||'{}');
+let current=new Date(2026,8,1),selected='2026-09-02';
+const pad=n=>String(n).padStart(2,'0');
+const iso=(y,m,d)=>`${y}-${pad(m+1)}-${pad(d)}`;
+function persist(){localStorage.setItem(KEY,JSON.stringify(data))}
+
+function showPage(page,btn){
+  document.querySelectorAll('.page').forEach(x=>x.classList.remove('activePage'));
+  document.getElementById('workPage').style.display='none';
+  document.getElementById('incomePage').style.display='none';
+  document.getElementById('statsPage').style.display='none';
+  document.getElementById('newsPage').style.display='none';
+  document.querySelector('.monthbar').style.display='flex'; document.querySelector('.hint').style.display='block'; document.querySelector('.week').style.display='grid'; document.getElementById('calendar').style.display='grid'; document.querySelector('.pager').style.display='block'; document.getElementById('detail').style.display='block';
+  document.querySelectorAll('.nav').forEach(x=>x.classList.remove('active'));
+  btn.classList.add('active');
+
+  if(page==='calendar'){
+    render(); renderDetail();
+    return;
+  }
+  document.querySelector('.monthbar').style.display='none'; document.querySelector('.hint').style.display='none'; document.querySelector('.week').style.display='none'; document.getElementById('calendar').style.display='none'; document.querySelector('.pager').style.display='none'; document.getElementById('detail').style.display='none';
+  const el=document.getElementById(page+'Page');
+  el.style.display='block';
+  if(page==='work') renderWorkPage();
+  if(page==='income') renderIncomePage();
+  if(page==='stats') renderStatsPage();
+  if(page==='news') el.classList.add('activePage');
+}
+function records(){
+  return Object.entries(data).sort((a,b)=>a[0].localeCompare(b[0]));
+}
+function renderWorkPage(){
+  const el=document.getElementById('workPage');
+  const rs=records().filter(([k,r])=>r.hours>0);
+  el.innerHTML='<h2>工作记录</h2>'+(rs.length?rs.map(([k,r])=>`<div class="card"><div class="row"><b>${k}</b><b>${r.hours||0}h</b></div><div class="row"><span>${r.place||'-'} · ${r.job||'-'}</span><span>₩${Number(r.income||0).toLocaleString()}</span></div><div style="text-align:right;margin-top:8px"><button class="edit" onclick="openModal('${k}')">✎ 修改</button></div></div>`).join(''):'<div class="empty">还没有工作记录</div>');
+}
+function renderIncomePage(){
+  const el=document.getElementById('incomePage');
+  const rs=records();
+  const total=rs.reduce((s,[k,r])=>s+Number(r.income||0),0);
+  el.innerHTML=`<h2>收入</h2><div class="card"><div style="font-size:13px;color:#68717e">累计收入</div><div style="font-size:30px;font-weight:800;margin-top:5px">₩${total.toLocaleString()}</div></div>`+
+  (rs.length?rs.map(([k,r])=>`<div class="card"><div class="row"><span>${k}</span><b>₩${Number(r.income||0).toLocaleString()}</b></div></div>`).join(''):'<div class="empty">还没有收入记录</div>');
+}
+function renderStatsPage(){
+  const el=document.getElementById('statsPage');
+  const rs=records();
+  const days=rs.filter(([k,r])=>r.hours>0).length;
+  const hours=rs.reduce((s,[k,r])=>s+Number(r.hours||0),0);
+  const income=rs.reduce((s,[k,r])=>s+Number(r.income||0),0);
+  const avg=days?income/days:0;
+  el.innerHTML=`<h2>统计</h2><div class="card">
+  <div class="row"><span>工作天数</span><b>${days} 天</b></div>
+  <div class="row"><span>总工时</span><b>${hours} h</b></div>
+  <div class="row"><span>总收入</span><b>₩${income.toLocaleString()}</b></div>
+  <div class="row"><span>平均每天收入</span><b>₩${Math.round(avg).toLocaleString()}</b></div>
+  </div>`;
+}
+function showMenu(){
+  alert('工作日历\\n\\n点击日期查看工作详情\\n点击右上角＋添加工作\\n左右滑动切换月份');
+}
+function searchRecords(){
+  const q=prompt('搜索工作地点或职业');
+  if(!q)return;
+  const hit=records().filter(([k,r])=>`${k} ${r.place||''} ${r.job||''} ${r.memo||''}`.toLowerCase().includes(q.toLowerCase()));
+  if(!hit.length){alert('没有找到记录');return;}
+  alert(hit.map(([k,r])=>`${k}  ${r.place||'-'}  ${r.job||'-'}  ${r.hours||0}h  ₩${Number(r.income||0).toLocaleString()}`).join('\\n'));
+}
+
+function render(){
+ const y=current.getFullYear(),m=current.getMonth();
+ document.getElementById('monthTitle').textContent=`${y}년 ${m+1}월`;
+ const cal=document.getElementById('calendar');cal.innerHTML='';
+ const first=new Date(y,m,1).getDay(),days=new Date(y,m+1,0).getDate();
+ const total=Math.ceil((first+days)/7)*7;
+ for(let i=0;i<total;i++){
+  let d=i-first+1,yy=y,mm=m,muted=false;
+  if(d<1){d+=new Date(y,m,0).getDate();mm--;muted=true}
+  if(d>days){d-=days;mm++;muted=true}
+  if(mm<0){mm=11;yy--} if(mm>11){mm=0;yy++}
+  const k=iso(yy,mm,d),r=data[k];
+  const el=document.createElement('div');el.className='day '+(muted?'muted ':'')+(k===selected?'selected':'');
+  let mark=r&&r.hours>0?`<div class="mark ${r.hours>=8?'green':r.hours>=4?'orange':'pink'}"></div><div class="hours">${r.hours}h</div>${r.income?`<div class="pay">₩${Number(r.income).toLocaleString()}</div>`:''}`:'';
+  if(r&&r.hours===0)mark='<div class="rest">휴무</div>';
+  el.innerHTML=`<div class="num">${d}</div>${mark}`;
+  el.onclick=()=>{selected=k;render();renderDetail()};
+  cal.appendChild(el);
+ }
+}
+function renderDetail(){
+ const r=data[selected],d=new Date(selected+'T00:00:00');
+ const week=['일','월','화','수','목','금','토'][d.getDay()];
+ document.getElementById('detail').innerHTML=`
+ <div class="detailHead"><div class="dateTitle">${d.getMonth()+1}월 ${d.getDate()}일 (${week})${r?'':' <span class="badge">휴무</span>'}</div>
+ ${r?'<button class="edit" onclick="openModal(selected)">✎ 수정</button>':''}</div>
+ <div class="info">
+ <div class="label">⌖　근무지</div><div class="value">${r?.place||'-'}</div>
+ <div class="label">▣　업종/직무</div><div class="value">${r?.job||'-'}</div>
+ <div class="label">◷　시간</div><div class="value">${r?.hours?r.hours+'h':'-'}</div>
+ <div class="label">₩　수입</div><div class="value">₩${Number(r?.income||0).toLocaleString()}</div>
+ <div class="label">▤　메모</div><div class="value">${r?.memo||'메모가 없습니다'}</div>
+ </div>
+ <button class="add" onclick="openModal()">＋ 작업 기록 추가</button>`;
+}
+function changeMonth(n){
+ current.setMonth(current.getMonth()+n);
+ selected=iso(current.getFullYear(),current.getMonth(),1);
+ render();renderDetail();
+}
+function openModal(k){
+ document.getElementById('modal').style.display='flex';
+ const r=data[k||selected];
+ fDate.value=k||selected;fPlace.value=r?.place||'';fJob.value=r?.job||'';fHours.value=r?.hours||'';fIncome.value=r?.income||'';fMemo.value=r?.memo||'';
+}
+function closeModal(){document.getElementById('modal').style.display='none'}
+function saveRecord(){
+ const k=fDate.value;if(!k)return;
+ data[k]={place:fPlace.value,job:fJob.value,hours:Number(fHours.value||0),income:Number(fIncome.value||0),memo:fMemo.value};
+ selected=k;current=new Date(k+'T00:00:00');current.setDate(1);persist();closeModal();render();renderDetail();
+}
+render();renderDetail();
+let startX=0;
+document.addEventListener('touchstart',e=>startX=e.touches[0].clientX,{passive:true});
+document.addEventListener('touchend',e=>{const dx=e.changedTouches[0].clientX-startX;if(Math.abs(dx)>70)changeMonth(dx<0?1:-1)},{passive:true});
+</script>
+</body>
+</html>
